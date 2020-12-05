@@ -301,9 +301,9 @@ def Word2Vector(data_list, embedding_dict):
 
     for idx_list in range(len(data_list)):
         embedding_list_tmp = list()
-        for idx_tuple in range(len(data_list[idx_list])):
+        for idx_tuple in range(len(data_list[idx_list])):            
             key = data_list[idx_list][idx_tuple][0] # token
-
+            # print(str(idx_tuple) + key)
             if key in embedding_dict:
                 value = embedding_dict[key]
             else:
@@ -322,8 +322,10 @@ def Feature(embed_list):
             feature_dict = dict()
             for idx_vec in range(len(embed_list[idx_list][idx_tuple])):
                 feature_dict['dim_' + str(idx_vec+1)] = embed_list[idx_list][idx_tuple][idx_vec]
+                
             feature_list_tmp.append(feature_dict)
-        feature_list.append(feature_list_tmp)
+
+        feature_list.append(feature_list_tmp)        
     return feature_list
 
 # get the labels of each tokens in train.data
