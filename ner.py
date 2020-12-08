@@ -34,20 +34,38 @@ def loadInputFile(path):
     trainingset = list()  # store trainingset [content,content,...]
     position = list()  # store position [article_id, start_pos, end_pos, entity_text, entity_type, ...]
     mentions = dict()  # store mentions[mention] = Type
+
+    # new list
+    word_length = list()
+    word_position = list()
     with open(file_path, 'r', encoding='utf8') as f:
         file_text=f.read().encode('utf-8').decode('utf-8-sig')
     datas=file_text.split('\n\n--------------------\n\n')[:-1]
     for data in datas:
         data=data.split('\n')
         content=data[0]
+        # print(content + '\n')
         trainingset.append(content)
         annotations=data[1:]
         for annot in annotations[1:]:
+            
             annot=annot.split('\t') #annot= article_id, start_pos, end_pos, entity_text, entity_type
             position.extend(annot)
             mentions[annot[3]]=annot[4]
+
+            word_length.append(int(annot[2]) - int(annot[1]))
+            word_position.append(annot[1])                  
     
-    return trainingset, position, mentions
+    return trainingset, position, mentions, word_length, word_position
+
+ts, pos, men, word_length, word_position = loadInputFile(file_path)
+
+print(len(men))
+print(len(pos))
+print(len(ts))
+print(len(word_length))
+print(len(word_position))
+# print(pos[:20])
 
 def CRFFormatData(trainingset, position, path):
     if (os.path.isfile(path)):
@@ -63,7 +81,7 @@ def CRFFormatData(trainingset, position, path):
             if '' in trainingset_split:
                 trainingset_split.remove('')
             else:
-                trainingset_split.remove(' ')
+                trainingset_split.remove(' ')        
         start_tmp = 0
         for position_idx in range(0,len(position),5):
             if int(position[position_idx]) == article_id:
@@ -84,7 +102,7 @@ def CRFFormatData(trainingset, position, path):
                             else:
                                 label = 'I-'+entity_type
                             
-                            output_str = token[token_idx] + ' ' + label + '\n'
+                            output_str = token[token_idx] + ' ' + label + ' ' + start_pos + ' ' + str(end_pos - start_pos) + '\n'
                             outputfile.write(output_str)
 
                     else:
@@ -94,7 +112,7 @@ def CRFFormatData(trainingset, position, path):
                             if len(token[token_idx].replace(' ','')) == 0:
                                 continue
                             
-                            output_str = token[token_idx] + ' ' + 'O' + '\n'
+                            output_str = token[token_idx] + ' ' + 'O' + ' ' + start_pos + ' '  + '0' + '\n'
                             outputfile.write(output_str)
 
                         token = list(trainingset[article_id][start_pos:end_pos])
@@ -114,7 +132,7 @@ def CRFFormatData(trainingset, position, path):
                                 else:
                                     label = 'I-'+entity_type
 
-                            output_str = token[token_idx] + ' ' + label + '\n'
+                            output_str = token[token_idx] + ' ' + label + ' ' + start_pos + ' '  + str(end_pos - start_pos) + '\n'
                             outputfile.write(output_str)
 
                     start_tmp = end_pos
@@ -130,7 +148,7 @@ def CRFFormatData(trainingset, position, path):
                         for token_idx in range(len(token)):
                             if len(token[token_idx].replace(' ','')) == 0:
                                 continue
-                            output_str = token[token_idx] + ' ' + 'O' + '\n'
+                            output_str = token[token_idx] + ' ' + 'O' + ' ' + start_pos + ' '  + '0' + '\n'
                             outputfile.write(output_str)
 
                     token = list(trainingset[article_id][start_pos:end_pos])
@@ -150,7 +168,7 @@ def CRFFormatData(trainingset, position, path):
                             else:
                                 label = 'I-'+entity_type
                         
-                        output_str = token[token_idx] + ' ' + label + '\n'
+                        output_str = token[token_idx] + ' ' + label + ' ' + start_pos + ' '  + str(end_pos - start_pos) + '\n'
                         outputfile.write(output_str)
                     start_tmp = end_pos
 
@@ -161,7 +179,7 @@ def CRFFormatData(trainingset, position, path):
                 continue
 
             
-            output_str = token[token_idx] + ' ' + 'O' + '\n'
+            output_str = token[token_idx] + ' ' + 'O' + ' ' + start_pos + ' '  + '0' + '\n'
             outputfile.write(output_str)
 
         count = 0
@@ -176,7 +194,7 @@ def CRFFormatData(trainingset, position, path):
     # close output file
     outputfile.close()
 
-trainingset, position, mentions=loadInputFile(file_path)
+trainingset, position, mentions, word_length, word_position=loadInputFile(file_path)
 
 data_path='/content/drive/MyDrive/Colab Notebooks/NER/sample.data'
 CRFFormatData(trainingset, position, data_path)
@@ -273,8 +291,11 @@ def Dataset(data_path):
             data_list.append(data_list_tmp)
             data_list_tmp = []
         else:
+            print('Row:' + row)
             row = row.strip('\n').split(' ')
-            data_tuple = (row[0], row[1])
+            data_tuple = (row[0], row[1], row[2])
+            print(data_tuple)
+
             data_list_tmp.append(data_tuple)
     if len(data_list_tmp) != 0:
         data_list.append(data_list_tmp)
@@ -358,6 +379,10 @@ y_test = Preprocess(testdata_list)
 y_pred, y_pred_mar, f1score = CRF(x_train, y_train, x_test, y_test)
 
 f1score
+
+y_pred
+
+y_pred_mar
 
 """## Output data
 * Change model output into `output.tsv` 
